@@ -40,20 +40,25 @@ describe("buildHistogram", () => {
     expect(buckets[0]).toMatchObject({ total: 2, counts: { info: 1, error: 1 } });
   });
 
-  it("uses readable intervals and preserves totals and severity counts", () => {
+  it("uses equal buckets and preserves totals and severity counts", () => {
     const buckets = buildHistogram(
       makeLogs([
         { milliseconds: 0, severityNumber: 1 },
         { milliseconds: 1_000, severityNumber: 13 },
         { milliseconds: 30_000, severityNumber: 21 },
       ]),
-      30,
+      3,
     );
 
-    expect(buckets).toHaveLength(31);
+    expect(buckets).toHaveLength(3);
+    expect(buckets.map(({ startMs, endMs }) => [startMs, endMs])).toEqual([
+      [0, 10_000],
+      [10_000, 20_000],
+      [20_000, 30_000],
+    ]);
     expect(buckets[0].counts.trace).toBe(1);
-    expect(buckets[1].counts.warn).toBe(1);
-    expect(buckets[30].counts.fatal).toBe(1);
+    expect(buckets[0].counts.warn).toBe(1);
+    expect(buckets[2].counts.fatal).toBe(1);
     expect(getHistogramSummary(buckets)).toMatchObject({ total: 3, errors: 1 });
   });
 });

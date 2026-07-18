@@ -1,11 +1,21 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Histogram } from "@/components/histogram/histogram";
+import { buildHistogram } from "@/lib/otlp/histogram";
 import type { NormalizedLog, NormalizedLogs } from "@/lib/otlp/normalize";
 import { createTimeFormatter, formatTimestamp, timeZoneCookie } from "@/lib/time-zone";
 
@@ -35,7 +45,10 @@ export function LogViewer({
     () => new Set(controls.log ? [controls.log] : []),
   );
   const [openResources, setOpenResources] = useState<Set<string>>(new Set());
+  const activeLog = useRef(controls.log);
+  const interactedLog = useRef<string | null>(null);
   const deferredQuery = useDeferredValue(controls.q.trim().toLowerCase());
+  activeLog.current = controls.log;
 
   const resources = useMemo(
     () => new Map(data.resources.map((resource) => [resource.id, resource])),
@@ -56,6 +69,7 @@ export function LogViewer({
     });
     return grouped;
   }, [filteredLogs]);
+  const histogramBuckets = useMemo(() => buildHistogram(filteredLogs), [filteredLogs]);
 
   const activeTimeZone = controls.tz === "utc" ? "UTC" : (browserTimeZone ?? "UTC");
   const timeFormatter = useMemo(() => createTimeFormatter(activeTimeZone), [activeTimeZone]);
@@ -63,7 +77,13 @@ export function LogViewer({
     () => (timestampMs: number) => formatTimestamp(timeFormatter, timestampMs),
     [timeFormatter],
   );
-  const timeZoneLabel = controls.tz === "utc" ? "UTC" : "Local";
+  const isLocalTimeReady = controls.tz === "local" && browserTimeZone !== null;
+  const timeZoneLabel = isLocalTimeReady ? "Local" : "UTC";
+  const histogramTimeZone = isLocalTimeReady ? `Local (${activeTimeZone})` : "UTC";
+  const changeHistogramMode = useCallback(
+    (histogram: "total" | "severity") => void setControls({ histogram }),
+    [setControls],
+  );
 
   useEffect(() => {
     const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -84,11 +104,15 @@ export function LogViewer({
     if (!controls.log) return;
     const log = logsById.get(controls.log);
     if (!log) return;
+    const openedByInteraction = interactedLog.current === log.id;
+    interactedLog.current = null;
 
     setExpandedLogs((current) => {
       if (current.has(log.id)) return current;
       return new Set(current).add(log.id);
     });
+    if (openedByInteraction) return;
+
     setOpenResources((current) => {
       if (current.has(log.resourceId)) return current;
       return new Set(current).add(log.resourceId);
@@ -101,21 +125,23 @@ export function LogViewer({
     return () => cancelAnimationFrame(frame);
   }, [controls.log, logsById]);
 
-  function toggleLog(log: NormalizedLog) {
-    const opening = !expandedLogs.has(log.id);
-    setExpandedLogs((current) => {
-      const next = new Set(current);
-      if (opening) next.add(log.id);
-      else next.delete(log.id);
-      return next;
-    });
-    if (opening) {
-      setOpenResources((current) => new Set(current).add(log.resourceId));
-      void setControls({ log: log.id });
-    } else if (controls.log === log.id) {
-      void setControls({ log: null });
-    }
-  }
+  const toggleLog = useCallback(
+    (log: NormalizedLog, opening: boolean) => {
+      interactedLog.current = opening ? log.id : null;
+      setExpandedLogs((current) => {
+        const next = new Set(current);
+        if (opening) next.add(log.id);
+        else next.delete(log.id);
+        return next;
+      });
+      if (opening) {
+        void setControls({ log: log.id });
+      } else if (activeLog.current === log.id) {
+        void setControls({ log: null });
+      }
+    },
+    [setControls],
+  );
 
   function toggleResource(resourceId: string, open: boolean) {
     setOpenResources((current) => {
@@ -127,6 +153,7 @@ export function LogViewer({
   }
 
   function refresh() {
+    if (refreshing) return;
     startRefresh(() => router.refresh());
   }
 
@@ -134,9 +161,6 @@ export function LogViewer({
     <div className="space-y-8">
       <header className="flex flex-col gap-6 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-2 font-mono text-xs font-medium tracking-[0.16em] text-accent uppercase">
-            OpenTelemetry
-          </p>
           <h1 className="text-3xl font-semibold tracking-tight text-text">OTLP Log Viewer</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-text-muted">
             Scan log records, inspect their attributes, and compare activity across exact OTLP
@@ -149,14 +173,34 @@ export function LogViewer({
               {data.logs.length}
             </span>
             <span className="text-xs text-text-subtle">
-              logs across {data.resources.length} resources
+              logs across {data.resources.length} Services
             </span>
           </p>
-          <Button disabled={refreshing} onClick={refresh}>
-            {refreshing ? "Refreshing…" : "Refresh data"}
+          <Button
+            aria-busy={refreshing}
+            aria-disabled={refreshing}
+            className="aria-disabled:cursor-wait aria-disabled:opacity-60"
+            onClick={refresh}
+          >
+            <span className="grid place-items-center">
+              <span className="invisible col-start-1 row-start-1" aria-hidden="true">
+                Refresh data
+              </span>
+              <span className="col-start-1 row-start-1">
+                {refreshing ? "Refreshing…" : "Refresh data"}
+              </span>
+            </span>
           </Button>
         </div>
       </header>
+
+      <Histogram
+        buckets={histogramBuckets}
+        formatter={formatter}
+        mode={controls.histogram}
+        onModeChange={changeHistogramMode}
+        timeZone={histogramTimeZone}
+      />
 
       <section aria-labelledby="logs-heading" className="space-y-4">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -165,18 +209,18 @@ export function LogViewer({
               Log records
             </h2>
             <p className="mt-1 text-sm text-text-muted">
-              Flat shows every record newest-first. By resource follows each parent resourceLogs
+              Flat shows every record newest-first. By Service follows each parent resourceLogs
               entry.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <label className="block min-w-64 flex-1 sm:max-w-sm">
               <span className="mb-1.5 block text-xs font-medium text-text-muted">Search logs</span>
               <input
                 className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-text outline-none placeholder:text-text-subtle hover:border-text-subtle focus:border-accent"
                 onChange={(event) => void setControls({ q: event.target.value, log: null })}
-                placeholder="Body, service, severity, or attributes"
+                placeholder="Body, service, or attributes"
                 type="search"
                 value={controls.q}
               />
@@ -210,7 +254,7 @@ export function LogViewer({
                 onChange={(view) => void setControls({ view })}
                 options={[
                   { value: "flat", label: "Flat" },
-                  { value: "grouped", label: "By resource" },
+                  { value: "grouped", label: "By Service" },
                 ]}
                 value={controls.view}
               />
