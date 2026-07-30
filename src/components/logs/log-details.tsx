@@ -49,6 +49,10 @@ export function LogDetails({
               <DetailValue>{log.severityNumber}</DetailValue>
             </div>
             <div>
+              <dt className="text-xs text-text-subtle">Severity text</dt>
+              <DetailValue>{log.severityText}</DetailValue>
+            </div>
+            <div>
               <dt className="text-xs text-text-subtle">Dropped attributes</dt>
               <DetailValue>{log.droppedAttributesCount}</DetailValue>
             </div>
@@ -68,10 +72,24 @@ export function LogDetails({
               <dt className="text-xs text-text-subtle">Observed time (ns)</dt>
               <DetailValue>{log.observedTimestampNs}</DetailValue>
             </div>
+            <div>
+              <dt className="text-xs text-text-subtle">Timestamp (ns)</dt>
+              <DetailValue>{log.timestampNs}</DetailValue>
+            </div>
           </dl>
         </Section>
 
         <Section title="Resource attributes">
+          <dl className="mb-3 grid grid-cols-2 gap-3 rounded-md border border-border bg-surface p-4">
+            <div>
+              <dt className="text-xs text-text-subtle">Schema URL</dt>
+              <DetailValue>{resource.schemaUrl}</DetailValue>
+            </div>
+            <div>
+              <dt className="text-xs text-text-subtle">Dropped attributes</dt>
+              <DetailValue>{resource.droppedAttributesCount}</DetailValue>
+            </div>
+          </dl>
           <AttributesTable attributes={resource.attributes} />
         </Section>
 

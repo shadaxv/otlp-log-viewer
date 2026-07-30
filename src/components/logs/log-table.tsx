@@ -18,7 +18,10 @@ export function LogTable({
   onToggleLog: (log: NormalizedLog, opening: boolean) => void;
 }) {
   return (
-    <section aria-label="Scrollable log records" className="focus-inset max-h-[65vh] overflow-auto">
+    <section
+      aria-label="Scrollable log records"
+      className="focus-inset max-h-[65vh] scroll-pt-12 overflow-auto"
+    >
       <table className="w-full min-w-[60rem] table-auto border-collapse text-left">
         <thead className="sticky top-0 z-10 bg-surface-muted text-xs tracking-wide text-text-subtle uppercase shadow-[0_1px_0_var(--border)]">
           <tr>

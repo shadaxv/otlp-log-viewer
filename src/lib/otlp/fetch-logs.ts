@@ -9,6 +9,7 @@ export async function fetchLogs() {
   const response = await fetch(logsEndpoint, {
     cache: "no-store",
     headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(60000),
   });
 
   if (!response.ok) {

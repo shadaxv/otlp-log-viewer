@@ -20,7 +20,7 @@ export const anyValueSchema: z.ZodType<AnyValueInput> = z.lazy(() =>
     .object({
       stringValue: z.string().optional(),
       boolValue: z.boolean().optional(),
-      intValue: z.union([z.string(), z.number()]).optional(),
+      intValue: z.union([z.string().regex(/^-?\d+$/), z.int()]).optional(),
       doubleValue: z.number().optional(),
       bytesValue: z.string().optional(),
       arrayValue: z
@@ -68,8 +68,8 @@ const instrumentationScopeSchema = z
 
 const logRecordSchema = z
   .object({
-    timeUnixNano: z.union([z.string(), z.number()]).optional(),
-    observedTimeUnixNano: z.union([z.string(), z.number()]).optional(),
+    timeUnixNano: z.union([z.string().regex(/^\d+$/), z.int().nonnegative()]).optional(),
+    observedTimeUnixNano: z.union([z.string().regex(/^\d+$/), z.int().nonnegative()]).optional(),
     severityNumber: z.number().optional(),
     severityText: z.string().optional(),
     body: anyValueSchema.optional(),

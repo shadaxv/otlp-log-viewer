@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useState, useSyncExternalStore } from "react";
 import type { BarSeriesOption } from "echarts/charts";
 import type { EChartsCoreOption } from "echarts/core";
 
@@ -15,6 +15,21 @@ function cssToken(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+const subscribeToReducedMotion = (onChange: () => void) => {
+  const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  motion.addEventListener("change", onChange);
+
+  return () => motion.removeEventListener("change", onChange);
+};
+const subscribeToDarkMode = (onChange: () => void) => {
+  const darkMode = window.matchMedia("(prefers-color-scheme: dark)");
+
+  darkMode.addEventListener("change", onChange);
+
+  return () => darkMode.removeEventListener("change", onChange);
+};
+
 export const Histogram = memo(function Histogram({
   buckets,
   mode,
@@ -28,39 +43,35 @@ export const Histogram = memo(function Histogram({
   timeZone: string;
   onModeChange: (mode: "total" | "severity") => void;
 }) {
-  const [appearanceVersion, setAppearanceVersion] = useState(0);
   const [chartWidth, setChartWidth] = useState(1120);
-  const [reducedMotion, setReducedMotion] = useState(false);
   const summary = getHistogramSummary(buckets);
 
-  useEffect(() => {
-    const theme = window.matchMedia("(prefers-color-scheme: dark)");
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updateTheme = () => setAppearanceVersion((version) => version + 1);
-    const updateMotion = () => setReducedMotion(motion.matches);
-    updateMotion();
-    theme.addEventListener("change", updateTheme);
-    motion.addEventListener("change", updateMotion);
-    return () => {
-      theme.removeEventListener("change", updateTheme);
-      motion.removeEventListener("change", updateMotion);
-    };
-  }, []);
-
-  const levels = useMemo(
-    () => [
-      ...(buckets.some((bucket) => bucket.counts.unspecified > 0)
-        ? (["unspecified"] as const)
-        : []),
-      ...severityLevels,
-    ],
-    [buckets],
+  const reducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
   );
 
-  const ariaDescription = useMemo(() => {
-    if (buckets.length === 0) return "No logs match the current view.";
-    return `Log distribution from ${formatter(buckets[0].startMs)} to ${formatter(buckets.at(-1)!.endMs)} ${timeZone}. ${summary.total} logs total. Peak bucket contains ${summary.peak.total} logs. ${summary.errors} error or fatal logs.`;
-  }, [buckets, formatter, summary, timeZone]);
+  // Re-render when system theme changes so the chart reads updated CSS tokens.
+  useSyncExternalStore(
+    subscribeToDarkMode,
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+    () => false,
+  );
+
+  const levels = [
+    ...(buckets.some((bucket) => bucket.counts.unspecified > 0) ? (["unspecified"] as const) : []),
+    ...severityLevels,
+  ];
+
+  const ariaDescription =
+    buckets.length === 0
+      ? "No logs match the current view."
+      : `Log distribution from ${formatter(buckets[0].startMs)} to ${formatter(
+          buckets.at(-1)!.endMs,
+        )} ${timeZone}. ${summary.total} logs total. Peak bucket contains ${
+          summary.peak.total
+        } logs. ${summary.errors} error or fatal logs.`;
 
   const option: EChartsCoreOption = (() => {
     if (typeof window === "undefined" || buckets.length === 0) return {};
@@ -269,7 +280,7 @@ export const Histogram = memo(function Histogram({
         </div>
       ) : (
         <figure aria-describedby="histogram-caption" className="px-2 pt-4 sm:px-4">
-          <EChartsCanvas key={appearanceVersion} onWidthChange={setChartWidth} option={option} />
+          <EChartsCanvas onWidthChange={setChartWidth} option={option} />
           <figcaption
             className="flex flex-wrap gap-x-4 gap-y-1 px-2 pb-4 text-xs text-text-subtle"
             id="histogram-caption"

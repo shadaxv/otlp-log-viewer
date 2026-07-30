@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { BarChart } from "echarts/charts";
 import {
   AriaComponent,
@@ -28,29 +28,39 @@ export function EChartsCanvas({
   option: EChartsCoreOption;
   onWidthChange: (width: number) => void;
 }) {
-  const container = useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.EChartsType | null>(null);
 
-  useEffect(() => {
-    if (!container.current) return;
+  const mountChart = useCallback(
+    (container: HTMLDivElement | null) => {
+      if (!container) {
+        return;
+      }
 
-    chart.current = echarts.init(container.current, undefined, { renderer: "canvas" });
-    const observer = new ResizeObserver(([entry]) => {
-      onWidthChange(entry.contentRect.width);
-      chart.current?.resize();
-    });
-    observer.observe(container.current);
+      const chartInstance = echarts.init(container, undefined, { renderer: "canvas" });
 
-    return () => {
-      observer.disconnect();
-      chart.current?.dispose();
-      chart.current = null;
-    };
-  }, [onWidthChange]);
+      chart.current = chartInstance;
+
+      const observer = new ResizeObserver(([entry]) => {
+        onWidthChange(entry.contentRect.width);
+        chartInstance.resize();
+      });
+      observer.observe(container);
+
+      return () => {
+        observer.disconnect();
+        chartInstance.dispose();
+
+        if (chartInstance === chart.current) {
+          chart.current = null;
+        }
+      };
+    },
+    [onWidthChange],
+  );
 
   useEffect(() => {
     chart.current?.setOption(option, { notMerge: true });
   }, [option]);
 
-  return <div className="h-72 w-full sm:h-80" ref={container} />;
+  return <div className="h-72 w-full sm:h-80" ref={mountChart} />;
 }

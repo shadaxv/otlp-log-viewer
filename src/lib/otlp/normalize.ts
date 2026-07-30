@@ -217,6 +217,10 @@ export function normalizeLogs(request: ExportLogsServiceRequest): NormalizedLogs
             scope: scopeAttributes,
             traceId,
             spanId,
+            scopeName: scopeLogs.scope?.name ?? null,
+            scopeVersion: scopeLogs.scope?.version ?? null,
+            resourceSchemaUrl: resourceLogs.schemaUrl ?? null,
+            scopeSchemaUrl: scopeLogs?.schemaUrl ?? null,
           }).toLowerCase(),
           sortTimestamp: timestamp.sort,
         });
