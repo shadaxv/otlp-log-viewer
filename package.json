@@ -1,37 +1,21 @@
 {
-  "name": "otlp-log-viewer",
+  "name": "otlp-log-viewer-workspace",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "pnpm --filter @otlp-log-viewer/web dev",
+    "build": "pnpm --filter @otlp-log-viewer/web build",
+    "start": "pnpm --filter @otlp-log-viewer/web start",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --deny-warnings .",
     "lint:fix": "oxlint --fix .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
-  },
-  "dependencies": {
-    "class-variance-authority": "0.7.1",
-    "echarts": "6.1.0",
-    "next": "16.2.10",
-    "nuqs": "2.9.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "server-only": "0.0.1",
-    "zod": "4.4.3"
+    "typecheck": "pnpm --filter @otlp-log-viewer/web typecheck",
+    "test": "pnpm --filter @otlp-log-viewer/web test"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.3.3",
-    "@types/node": "24.13.3",
-    "@types/react": "19.2.17",
-    "@types/react-dom": "19.2.3",
     "oxfmt": "0.59.0",
-    "oxlint": "1.74.0",
-    "tailwindcss": "4.3.3",
-    "typescript": "6.0.3",
-    "vitest": "4.1.10"
-  }
+    "oxlint": "1.74.0"
+  },
+  "packageManager": "pnpm@10.30.3"
 }
