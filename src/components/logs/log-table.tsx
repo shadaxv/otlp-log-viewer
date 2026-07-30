@@ -2,7 +2,7 @@ import type { NormalizedLog, NormalizedResource } from "@/lib/otlp/normalize";
 
 import { LogRow } from "./log-row";
 
-export function LogTable({
+export const LogTable = ({
   logs,
   resources,
   expandedLogs,
@@ -16,7 +16,7 @@ export function LogTable({
   formatter: (timestampMs: number) => string;
   timeZoneLabel: string;
   onToggleLog: (log: NormalizedLog, opening: boolean) => void;
-}) {
+}) => {
   return (
     <section
       aria-label="Scrollable log records"
@@ -42,7 +42,11 @@ export function LogTable({
         <tbody>
           {logs.map((log) => {
             const resource = resources.get(log.resourceId);
-            if (!resource) return null;
+
+            if (!resource) {
+              return null;
+            }
+
             return (
               <LogRow
                 expanded={expandedLogs.has(log.id)}
@@ -59,4 +63,4 @@ export function LogTable({
       </table>
     </section>
   );
-}
+};

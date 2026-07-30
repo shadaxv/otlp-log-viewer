@@ -4,6 +4,13 @@ A focused viewer for OpenTelemetry log records. It fetches an OTLP payload on th
 
 Data comes from the provided [OTLP Logs API](https://take-home-assignment-otlp-logs-api.vercel.app/api/v2/logs). The endpoint returns a new random payload on every request.
 
+## Event tracking variants
+
+The follow-up assignment is available in two backend variants:
+
+- [Express and PostgreSQL](https://github.com/shadaxv/otlp-log-viewer/tree/feature/event-tracking) — a separate HTTP API validates and persists browser usage events in PostgreSQL.
+- [Convex](https://github.com/shadaxv/otlp-log-viewer/tree/feature/event-tracking-convex) — the frontend records the same events through typed Convex mutations.
+
 ## Run locally
 
 Requires Node.js 24 LTS and pnpm 10.
@@ -14,6 +21,15 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+## Time spent
+
+The original time-boxed implementation took approximately **3.5 hours**.
+
+After completing the assignment, I spent an additional **1 hour** on two follow-up passes:
+
+- `refactor(app): address self-review findings`
+- `style(code): standardize function syntax and control flow`
 
 ## What is included
 

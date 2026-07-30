@@ -1,10 +1,10 @@
-export function Chevron({
+export const Chevron = ({
   expanded = false,
   className = "",
 }: {
   expanded?: boolean;
   className?: string;
-}) {
+}) => {
   return (
     <svg
       aria-hidden="true"
@@ -21,4 +21,4 @@ export function Chevron({
       />
     </svg>
   );
-}
+};

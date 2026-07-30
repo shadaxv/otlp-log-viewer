@@ -30,13 +30,13 @@ const queryParsers = {
   log: parseAsString,
 };
 
-export function LogViewer({
+export const LogViewer = ({
   data,
   initialTimeZone,
 }: {
   data: NormalizedLogs;
   initialTimeZone: string | null;
-}) {
+}) => {
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [controls, setControls] = useQueryStates(queryParsers, { history: "replace" });
@@ -48,6 +48,7 @@ export function LogViewer({
   const activeLogId = useRef(controls.log);
   const interactedLog = useRef<string | null>(null);
   const deferredQuery = useDeferredValue(controls.q.trim().toLowerCase());
+
   activeLogId.current = controls.log;
 
   const resources = useMemo(
@@ -62,11 +63,14 @@ export function LogViewer({
   );
   const logsByResource = useMemo(() => {
     const grouped = new Map<string, NormalizedLog[]>();
+
     filteredLogs.forEach((log) => {
       const logs = grouped.get(log.resourceId) ?? [];
+
       logs.push(log);
       grouped.set(log.resourceId, logs);
     });
+
     return grouped;
   }, [filteredLogs]);
 
@@ -92,16 +96,23 @@ export function LogViewer({
   const timeZoneLabel = isLocalTimeReady ? "Local" : "UTC";
   const histogramTimeZone = isLocalTimeReady ? `Local (${activeTimeZone})` : "UTC";
   const changeHistogramMode = useCallback(
-    (histogram: "total" | "severity") => void setControls({ histogram }),
+    (histogram: "total" | "severity") => {
+      setControls({ histogram });
+    },
     [setControls],
   );
 
   useEffect(() => {
     const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     setBrowserTimeZone(detectedTimeZone);
-    if (detectedTimeZone === initialTimeZone) return;
+
+    if (detectedTimeZone === initialTimeZone) {
+      return;
+    }
 
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
+
     document.cookie = `${timeZoneCookie}=${encodeURIComponent(detectedTimeZone)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
   }, [initialTimeZone]);
 
@@ -115,56 +126,82 @@ export function LogViewer({
 
   useEffect(() => {
     if (controls.log && !logsById.has(controls.log)) {
-      void setControls({ log: null });
+      setControls({ log: null });
     }
   }, [controls.log, logsById, setControls]);
 
   const toggleLog = useCallback(
     (log: NormalizedLog, opening: boolean) => {
       interactedLog.current = opening ? log.id : null;
+
       setExpandedLogs((current) => {
         const next = new Set(current);
-        if (opening) next.add(log.id);
-        else next.delete(log.id);
+
+        if (opening) {
+          next.add(log.id);
+        } else {
+          next.delete(log.id);
+        }
+
         return next;
       });
+
       if (opening) {
-        void setControls({ log: log.id });
+        setControls({ log: log.id });
       } else if (activeLogId.current === log.id) {
-        void setControls({ log: null });
+        setControls({ log: null });
       }
     },
     [setControls],
   );
 
-  function toggleResource(resourceId: string, open: boolean) {
+  const toggleResource = (resourceId: string, open: boolean) => {
     setOpenResources((current) => {
       const next = new Set(current);
-      if (open) next.add(resourceId);
-      else next.delete(resourceId);
+
+      if (open) {
+        next.add(resourceId);
+      } else {
+        next.delete(resourceId);
+      }
+
       return next;
     });
 
     if (!open && activeLogRecord?.resourceId === resourceId) {
       setControls({ log: null });
     }
-  }
+  };
 
-  function refresh() {
-    if (refreshing) return;
+  const refresh = () => {
+    if (refreshing) {
+      return;
+    }
+
     startRefresh(() => router.refresh());
-  }
+  };
 
   const activeScroller = useCallback(
     (node: HTMLElement | null) => {
-      if (!node) return;
-      if (!controls.log) return;
+      if (!node) {
+        return;
+      }
 
-      if (!activeLogRecord) return;
+      if (!controls.log) {
+        return;
+      }
+
+      if (!activeLogRecord) {
+        return;
+      }
+
       const openedByInteraction = interactedLog.current === activeLogRecord.id;
+
       interactedLog.current = null;
 
-      if (openedByInteraction) return;
+      if (openedByInteraction) {
+        return;
+      }
 
       const element = node.querySelector(`#log-trigger-${CSS.escape(activeLogRecord.id)}`);
 
@@ -238,7 +275,9 @@ export function LogViewer({
               <span className="mb-1.5 block text-xs font-medium text-text-muted">Search logs</span>
               <input
                 className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-text outline-none placeholder:text-text-subtle hover:border-text-subtle focus:border-accent"
-                onChange={(event) => void setControls({ q: event.target.value, log: null })}
+                onChange={(event) => {
+                  setControls({ q: event.target.value, log: null });
+                }}
                 placeholder="Body, service, or attributes"
                 type="search"
                 value={controls.q}
@@ -249,7 +288,9 @@ export function LogViewer({
               <span className="mb-1.5 block text-xs font-medium text-text-muted">Time zone</span>
               <SegmentedControl
                 label="Time zone"
-                onChange={(tz) => void setControls({ tz })}
+                onChange={(tz) => {
+                  setControls({ tz });
+                }}
                 options={[
                   { value: "local", label: "Local" },
                   { value: "utc", label: "UTC" },
@@ -270,7 +311,9 @@ export function LogViewer({
               <span className="mb-1.5 block text-xs font-medium text-text-muted">View</span>
               <SegmentedControl
                 label="Log organization"
-                onChange={(view) => void setControls({ view })}
+                onChange={(view) => {
+                  setControls({ view });
+                }}
                 options={[
                   { value: "flat", label: "Flat" },
                   { value: "grouped", label: "By Service" },
@@ -302,7 +345,12 @@ export function LogViewer({
               Try a broader search or refresh the random dataset.
             </p>
             {controls.q ? (
-              <Button className="mt-4" onClick={() => void setControls({ q: "" })}>
+              <Button
+                className="mt-4"
+                onClick={() => {
+                  setControls({ q: "" });
+                }}
+              >
                 Clear search
               </Button>
             ) : null}
@@ -326,7 +374,11 @@ export function LogViewer({
           <div className="space-y-3" ref={activeScroller} key="groups">
             {data.resources.map((resource) => {
               const logs = logsByResource.get(resource.id) ?? [];
-              if (logs.length === 0) return null;
+
+              if (logs.length === 0) {
+                return null;
+              }
+
               return (
                 <ResourceGroup
                   expandedLogs={renderedExpandedLogs}
@@ -349,4 +401,4 @@ export function LogViewer({
       </section>
     </div>
   );
-}
+};

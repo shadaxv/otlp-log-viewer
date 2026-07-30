@@ -56,13 +56,23 @@ export type NormalizedLogs = {
   resources: NormalizedResource[];
 };
 
-export function readAnyValue(value: AnyValueInput | undefined): DisplayValue {
-  if (!value) return null;
-  if (value.stringValue !== undefined) return value.stringValue;
-  if (value.boolValue !== undefined) return value.boolValue;
+export const readAnyValue = (value: AnyValueInput | undefined): DisplayValue => {
+  if (!value) {
+    return null;
+  }
+
+  if (value.stringValue !== undefined) {
+    return value.stringValue;
+  }
+
+  if (value.boolValue !== undefined) {
+    return value.boolValue;
+  }
+
   if (value.intValue !== undefined) {
     try {
       const integer = BigInt(value.intValue);
+
       return integer >= Number.MIN_SAFE_INTEGER && integer <= Number.MAX_SAFE_INTEGER
         ? Number(integer)
         : integer.toString();
@@ -70,40 +80,63 @@ export function readAnyValue(value: AnyValueInput | undefined): DisplayValue {
       return String(value.intValue);
     }
   }
-  if (value.doubleValue !== undefined) return value.doubleValue;
-  if (value.bytesValue !== undefined) return value.bytesValue;
-  if (value.arrayValue) return (value.arrayValue.values ?? []).map(readAnyValue);
-  if (value.kvlistValue) return attributesToObject(value.kvlistValue.values ?? []);
+
+  if (value.doubleValue !== undefined) {
+    return value.doubleValue;
+  }
+
+  if (value.bytesValue !== undefined) {
+    return value.bytesValue;
+  }
+
+  if (value.arrayValue) {
+    return (value.arrayValue.values ?? []).map(readAnyValue);
+  }
+
+  if (value.kvlistValue) {
+    return attributesToObject(value.kvlistValue.values ?? []);
+  }
+
   return null;
-}
+};
 
-export function attributesToObject(attributes: KeyValueInput[]): Record<string, DisplayValue> {
+export const attributesToObject = (attributes: KeyValueInput[]): Record<string, DisplayValue> => {
   return Object.fromEntries(attributes.map(({ key, value }) => [key, readAnyValue(value)]));
-}
+};
 
-function canonicalStringify(value: DisplayValue): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalStringify).join(",")}]`;
+const canonicalStringify = (value: DisplayValue): string => {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalStringify).join(",")}]`;
+  }
+
   return `{${Object.keys(value)
     .sort()
     .map((key) => `${JSON.stringify(key)}:${canonicalStringify(value[key])}`)
     .join(",")}}`;
-}
+};
 
-function fingerprint(value: DisplayValue): string {
+const fingerprint = (value: DisplayValue): string => {
   let hash = 14695981039346656037n;
+
   for (const character of canonicalStringify(value)) {
     hash ^= BigInt(character.codePointAt(0) ?? 0);
     hash = BigInt.asUintN(64, hash * 1099511628211n);
   }
-  return hash.toString(16).padStart(16, "0");
-}
 
-function parseTimestamp(value: string | number | undefined) {
+  return hash.toString(16).padStart(16, "0");
+};
+
+const parseTimestamp = (value: string | number | undefined) => {
   const ns = value === undefined ? "0" : String(value);
+
   try {
     const nanoseconds = BigInt(ns);
     const milliseconds = nanoseconds / 1_000_000n;
+
     return {
       ns: nanoseconds.toString(),
       ms:
@@ -116,13 +149,13 @@ function parseTimestamp(value: string | number | undefined) {
   } catch {
     return { ns, ms: 0, sort: 0n };
   }
-}
+};
 
-function asServiceValue(value: DisplayValue | undefined) {
+const asServiceValue = (value: DisplayValue | undefined) => {
   return typeof value === "string" && value.length > 0 ? value : null;
-}
+};
 
-export function normalizeLogs(request: ExportLogsServiceRequest): NormalizedLogs {
+export const normalizeLogs = (request: ExportLogsServiceRequest): NormalizedLogs => {
   const logsWithSort: Array<NormalizedLog & { sortTimestamp: bigint }> = [];
   const resources: NormalizedResource[] = [];
   const occurrences = new Map<string, number>();
@@ -179,7 +212,9 @@ export function normalizeLogs(request: ExportLogsServiceRequest): NormalizedLogs
         };
         const baseFingerprint = fingerprint(fingerprintValue);
         const occurrence = (occurrences.get(baseFingerprint) ?? 0) + 1;
+
         occurrences.set(baseFingerprint, occurrence);
+
         const id = occurrence === 1 ? baseFingerprint : `${baseFingerprint}:${occurrence}`;
 
         logsWithSort.push({
@@ -229,13 +264,16 @@ export function normalizeLogs(request: ExportLogsServiceRequest): NormalizedLogs
   });
 
   logsWithSort.sort((left, right) => {
-    if (left.sortTimestamp === right.sortTimestamp) return 0;
+    if (left.sortTimestamp === right.sortTimestamp) {
+      return 0;
+    }
     return left.sortTimestamp > right.sortTimestamp ? -1 : 1;
   });
 
   const logs = logsWithSort.map(({ sortTimestamp: _, ...log }) => log);
   const resourceById = new Map(resources.map((resource) => [resource.id, resource]));
+
   logs.forEach((log) => resourceById.get(log.resourceId)?.logIds.push(log.id));
 
   return { logs, resources };
-}
+};

@@ -2,13 +2,13 @@ import type { NormalizedLog, NormalizedResource } from "@/lib/otlp/normalize";
 
 import { AttributesTable } from "./attributes-table";
 
-function DetailValue({ children }: { children: React.ReactNode }) {
+const DetailValue = ({ children }: { children: React.ReactNode }) => {
   return (
     <dd className="mt-1 font-mono text-xs leading-5 break-all text-text">{children ?? "—"}</dd>
   );
-}
+};
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
   return (
     <section>
       <h3 className="mb-2 text-xs font-semibold tracking-wide text-text-subtle uppercase">
@@ -17,15 +17,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </section>
   );
-}
+};
 
-export function LogDetails({
+export const LogDetails = ({
   log,
   resource,
 }: {
   log: NormalizedLog;
   resource: NormalizedResource;
-}) {
+}) => {
   const body = typeof log.body === "string" ? log.body : JSON.stringify(log.body, null, 2);
 
   return (
@@ -117,4 +117,4 @@ export function LogDetails({
       </div>
     </div>
   );
-}
+};

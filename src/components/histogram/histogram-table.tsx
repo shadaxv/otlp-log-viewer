@@ -2,7 +2,7 @@ import { Chevron } from "@/components/ui/chevron";
 import type { HistogramBucket } from "@/lib/otlp/histogram";
 import { severityConfig, type SeverityLevel } from "@/lib/otlp/severity";
 
-export function HistogramTable({
+export const HistogramTable = ({
   buckets,
   mode,
   formatter,
@@ -12,7 +12,7 @@ export function HistogramTable({
   mode: "total" | "severity";
   formatter: (timestampMs: number) => string;
   levels: readonly SeverityLevel[];
-}) {
+}) => {
   return (
     <details className="group border-t border-border">
       <summary className="focus-inset flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2.5 text-sm font-medium text-text-muted marker:content-none hover:bg-surface-hover hover:text-text">
@@ -68,4 +68,4 @@ export function HistogramTable({
       </div>
     </details>
   );
-}
+};

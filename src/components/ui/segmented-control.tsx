@@ -19,12 +19,12 @@ type SegmentedControlProps<T extends string> = {
   onChange: (value: T) => void;
 };
 
-export function SegmentedControl<T extends string>({
+export const SegmentedControl = <T extends string>({
   label,
   value,
   options,
   onChange,
-}: SegmentedControlProps<T>) {
+}: SegmentedControlProps<T>) => {
   return (
     <fieldset className="inline-flex rounded-md border border-border bg-surface-muted p-0.5">
       <legend className="sr-only">{label}</legend>
@@ -41,4 +41,4 @@ export function SegmentedControl<T extends string>({
       ))}
     </fieldset>
   );
-}
+};

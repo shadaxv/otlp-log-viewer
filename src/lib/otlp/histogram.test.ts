@@ -4,7 +4,7 @@ import { buildHistogram, getHistogramSummary } from "./histogram";
 import { normalizeLogs } from "./normalize";
 import { exportLogsServiceRequestSchema } from "./schema";
 
-function makeLogs(records: Array<{ milliseconds: number; severityNumber: number }>) {
+const makeLogs = (records: Array<{ milliseconds: number; severityNumber: number }>) => {
   return normalizeLogs(
     exportLogsServiceRequestSchema.parse({
       resourceLogs: [
@@ -21,7 +21,7 @@ function makeLogs(records: Array<{ milliseconds: number; severityNumber: number 
       ],
     }),
   ).logs;
-}
+};
 
 describe("buildHistogram", () => {
   it("returns no buckets for no logs", () => {

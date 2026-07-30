@@ -57,19 +57,31 @@ export const severityConfig = {
   { label: string; color: string; chart: string; muted: string; border: string }
 >;
 
-export function getSeverityLevel(
+export const getSeverityLevel = (
   number: number | undefined,
   text: string | undefined,
-): SeverityLevel {
+): SeverityLevel => {
   if (number !== undefined && number > 0) {
-    if (number >= 21) return "fatal";
-    if (number >= 17) return "error";
-    if (number >= 13) return "warn";
-    if (number >= 9) return "info";
-    if (number >= 5) return "debug";
+    if (number >= 21) {
+      return "fatal";
+    }
+    if (number >= 17) {
+      return "error";
+    }
+    if (number >= 13) {
+      return "warn";
+    }
+    if (number >= 9) {
+      return "info";
+    }
+    if (number >= 5) {
+      return "debug";
+    }
+
     return "trace";
   }
 
   const normalizedText = text?.toLowerCase() ?? "";
+
   return severityLevels.find((level) => normalizedText.startsWith(level)) ?? "unspecified";
-}
+};

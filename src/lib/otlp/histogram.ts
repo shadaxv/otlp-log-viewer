@@ -8,14 +8,17 @@ export type HistogramBucket = {
   counts: Record<SeverityLevel, number>;
 };
 
-export function buildHistogram(logs: NormalizedLog[], bucketCount = 24): HistogramBucket[] {
-  if (logs.length === 0) return [];
+export const buildHistogram = (logs: NormalizedLog[], bucketCount = 24): HistogramBucket[] => {
+  if (logs.length === 0) {
+    return [];
+  }
 
   const timestamps = logs.map((log) => log.timestampMs);
   const oldest = Math.min(...timestamps);
   const newest = Math.max(...timestamps);
   const count = oldest === newest ? 1 : Math.max(1, bucketCount);
   const interval = count === 1 ? 1 : (newest - oldest) / count;
+
   const emptyCounts = () => ({
     trace: 0,
     debug: 0,
@@ -25,6 +28,7 @@ export function buildHistogram(logs: NormalizedLog[], bucketCount = 24): Histogr
     fatal: 0,
     unspecified: 0,
   });
+
   const buckets = Array.from({ length: count }, (_, index) => ({
     startMs: oldest + index * interval,
     endMs: count === 1 || index === count - 1 ? newest : oldest + (index + 1) * interval,
@@ -39,9 +43,9 @@ export function buildHistogram(logs: NormalizedLog[], bucketCount = 24): Histogr
   });
 
   return buckets;
-}
+};
 
-export function getHistogramSummary(buckets: HistogramBucket[]) {
+export const getHistogramSummary = (buckets: HistogramBucket[]) => {
   const total = buckets.reduce((sum, bucket) => sum + bucket.total, 0);
   const peak = buckets.reduce(
     (highest, bucket) => (bucket.total > highest.total ? bucket : highest),
@@ -54,9 +58,11 @@ export function getHistogramSummary(buckets: HistogramBucket[]) {
       ) as Record<SeverityLevel, number>,
     },
   );
+
   const errors = buckets.reduce(
     (sum, bucket) => sum + bucket.counts.error + bucket.counts.fatal,
     0,
   );
+
   return { total, peak, errors };
-}
+};

@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "endOfLine": "lf",
   "sortTailwindcss": {
     "stylesheet": "./src/app/globals.css",
     "functions": ["cva"]

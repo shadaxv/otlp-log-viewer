@@ -108,6 +108,7 @@ describe("normalizeLogs", () => {
       body: { stringValue: "same" },
       attributes: [{ key: "key", value: { stringValue: "value" } }],
     };
+
     const request = exportLogsServiceRequestSchema.parse({
       resourceLogs: [{ scopeLogs: [{ logRecords: [record, record, record] }] }],
     });

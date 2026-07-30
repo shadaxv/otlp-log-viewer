@@ -3,7 +3,7 @@ import type { NormalizedLog, NormalizedResource } from "@/lib/otlp/normalize";
 
 import { LogTable } from "./log-table";
 
-export function ResourceGroup({
+export const ResourceGroup = ({
   resource,
   logs,
   open,
@@ -23,7 +23,7 @@ export function ResourceGroup({
   timeZoneLabel: string;
   onToggleGroup: (open: boolean) => void;
   onToggleLog: (log: NormalizedLog, opening: boolean) => void;
-}) {
+}) => {
   return (
     <details
       className="group overflow-hidden rounded-lg border border-border bg-surface"
@@ -61,4 +61,4 @@ export function ResourceGroup({
       </div>
     </details>
   );
-}
+};

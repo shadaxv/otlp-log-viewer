@@ -21,13 +21,13 @@ echarts.use([
   CanvasRenderer,
 ]);
 
-export function EChartsCanvas({
+export const EChartsCanvas = ({
   option,
   onWidthChange,
 }: {
   option: EChartsCoreOption;
   onWidthChange: (width: number) => void;
-}) {
+}) => {
   const chart = useRef<echarts.EChartsType | null>(null);
 
   const mountChart = useCallback(
@@ -44,6 +44,7 @@ export function EChartsCanvas({
         onWidthChange(entry.contentRect.width);
         chartInstance.resize();
       });
+
       observer.observe(container);
 
       return () => {
@@ -63,4 +64,4 @@ export function EChartsCanvas({
   }, [option]);
 
   return <div className="h-72 w-full sm:h-80" ref={mountChart} />;
-}
+};

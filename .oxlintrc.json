@@ -4,7 +4,12 @@
   "categories": {
     "correctness": "error"
   },
-  "rules": {},
+  "rules": {
+    "curly": ["error", "all"],
+    "no-void": "error",
+    "func-style": ["error", "expression"],
+    "typescript/no-inferrable-types": "error"
+  },
   "env": {
     "builtin": true
   }

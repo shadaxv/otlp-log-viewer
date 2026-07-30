@@ -1,20 +1,30 @@
 import type { DisplayValue } from "@/lib/otlp/normalize";
 
-function displayValue(value: DisplayValue) {
-  if (value === null) return "null";
-  if (typeof value === "string") return value;
-  if (typeof value === "object") return JSON.stringify(value, null, 2);
-  return String(value);
-}
+const displayValue = (value: DisplayValue) => {
+  if (value === null) {
+    return "null";
+  }
 
-export function AttributesTable({
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+
+  return String(value);
+};
+
+export const AttributesTable = ({
   attributes,
   emptyMessage = "No attributes",
 }: {
   attributes: Record<string, DisplayValue>;
   emptyMessage?: string;
-}) {
+}) => {
   const entries = Object.entries(attributes);
+
   if (entries.length === 0) {
     return <p className="text-sm text-text-subtle">{emptyMessage}</p>;
   }
@@ -52,4 +62,4 @@ export function AttributesTable({
       </table>
     </div>
   );
-}
+};

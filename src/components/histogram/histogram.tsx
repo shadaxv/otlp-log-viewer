@@ -11,9 +11,9 @@ import { severityConfig, severityLevels } from "@/lib/otlp/severity";
 import { EChartsCanvas } from "./echarts-canvas";
 import { HistogramTable } from "./histogram-table";
 
-function cssToken(name: string) {
+const cssToken = (name: string) => {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
+};
 
 const subscribeToReducedMotion = (onChange: () => void) => {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -22,6 +22,7 @@ const subscribeToReducedMotion = (onChange: () => void) => {
 
   return () => motion.removeEventListener("change", onChange);
 };
+
 const subscribeToDarkMode = (onChange: () => void) => {
   const darkMode = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -74,7 +75,9 @@ export const Histogram = memo(function Histogram({
         } logs. ${summary.errors} error or fatal logs.`;
 
   const option: EChartsCoreOption = (() => {
-    if (typeof window === "undefined" || buckets.length === 0) return {};
+    if (typeof window === "undefined" || buckets.length === 0) {
+      return {};
+    }
 
     const text = cssToken("--text-muted");
     const subtle = cssToken("--text-subtle");
@@ -84,8 +87,10 @@ export const Histogram = memo(function Histogram({
     const axisData = buckets.map((bucket) => String(bucket.startMs));
     const axisLabels = buckets.map((bucket) => {
       const timestamp = formatter(bucket.startMs);
+
       return { date: timestamp.slice(0, 10), time: timestamp.slice(11, 19) };
     });
+
     const labelStep = Math.max(
       1,
       Math.ceil((axisLabels.length * 56) / Math.max(chartWidth - 64, 1)),
@@ -114,6 +119,7 @@ export const Histogram = memo(function Histogram({
 
       return (index: number) => visibleIndices.has(index);
     })();
+
     const baseSeries = {
       type: "bar" as const,
       barMaxWidth: buckets.length === 1 ? 48 : undefined,
@@ -122,6 +128,7 @@ export const Histogram = memo(function Histogram({
       animationDuration: reducedMotion ? 0 : 250,
       animationDurationUpdate: reducedMotion ? 0 : 200,
     };
+
     const reversedLevels = [...levels].reverse();
     const series: BarSeriesOption[] =
       mode === "total"
@@ -136,13 +143,16 @@ export const Histogram = memo(function Histogram({
         : levels.map((level) => {
             const color = cssToken(severityConfig[level].chart);
             const levelIndex = levels.indexOf(level);
+
             return {
               ...baseSeries,
               name: severityConfig[level].label,
               z: levels.length - levelIndex,
               barGap: "-100%",
               data: buckets.map((bucket) => {
-                if (bucket.counts[level] === 0) return "-";
+                if (bucket.counts[level] === 0) {
+                  return "-";
+                }
 
                 const value = levels
                   .slice(0, levelIndex + 1)
@@ -201,7 +211,11 @@ export const Histogram = memo(function Histogram({
           const items = Array.isArray(parameters) ? parameters : [parameters];
           const first = items[0] as { dataIndex?: number } | undefined;
           const bucket = buckets[first?.dataIndex ?? 0];
-          if (!bucket) return "";
+
+          if (!bucket) {
+            return "";
+          }
+
           const rows =
             mode === "severity"
               ? levels
@@ -211,6 +225,7 @@ export const Histogram = memo(function Histogram({
                   )
                   .join("")
               : `<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:8px"><span style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:2px;background:${totalColor}"></span>Total</span><strong style="font-variant-numeric:tabular-nums">${bucket.total.toLocaleString("en-US")}</strong></div>`;
+
           return `<div style="color:${subtle};font-size:11px">${formatter(bucket.startMs)} – ${formatter(bucket.endMs)}<br/>${timeZone}</div>${rows}`;
         },
       },
@@ -227,7 +242,11 @@ export const Histogram = memo(function Histogram({
           showMinLabel: true,
           formatter: (_value: string, index: number) => {
             const label = axisLabels[index];
-            if (!label) return "";
+
+            if (!label) {
+              return "";
+            }
+
             return axisLabels[index - 1]?.date === label.date
               ? label.time
               : `${label.time}\n${label.date}`;
