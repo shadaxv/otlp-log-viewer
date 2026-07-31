@@ -1,0 +1,23 @@
+{
+  "name": "@otlp-log-viewer/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": {
+      "types": "./convex/_generated/api.d.ts",
+      "default": "./convex/_generated/api.js"
+    }
+  },
+  "scripts": {
+    "dev": "convex dev --tail-logs disable",
+    "setup": "convex dev --once",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "convex": "1.42.3"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

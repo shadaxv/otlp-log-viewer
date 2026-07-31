@@ -10,7 +10,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@otlp-log-viewer/api": "workspace:*",
     "class-variance-authority": "0.7.1",
+    "convex": "1.42.3",
     "echarts": "6.1.0",
     "next": "16.2.10",
     "nuqs": "2.9.0",

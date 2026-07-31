@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "endOfLine": "lf",
+  "ignorePatterns": ["apps/api/convex/_generated/**"],
   "sortTailwindcss": {
     "stylesheet": "./apps/web/src/app/globals.css",
     "functions": ["cva"]

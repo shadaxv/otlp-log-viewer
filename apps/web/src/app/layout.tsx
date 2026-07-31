@@ -2,6 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 
+import { AppOpenTracker } from "@/lib/use-event-tracking";
+
+import { ConvexClientProvider } from "./convex-client-provider";
+
 export const metadata: Metadata = {
   title: "OTLP Log Viewer",
   description: "Inspect OpenTelemetry log records and their resource context.",
@@ -23,7 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <NuqsAdapter>{children}</NuqsAdapter>
+        <ConvexClientProvider>
+          <AppOpenTracker />
+          <NuqsAdapter>{children}</NuqsAdapter>
+        </ConvexClientProvider>
       </body>
     </html>
   );

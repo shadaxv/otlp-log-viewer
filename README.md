@@ -17,19 +17,24 @@ Requires Node.js 24 LTS and pnpm 10.
 
 ```bash
 pnpm install
+pnpm convex:setup
+cp apps/web/.env.example apps/web/.env.local
 pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Time spent
+`pnpm convex:setup` provisions an anonymous local Convex deployment, generates the typed function
+API, and stores its ignored local configuration under `apps/api`. It does not require a Convex account
+or use a cloud deployment. After setup, `pnpm dev` starts the Next.js app and local Convex backend
+together.
 
-The original time-boxed implementation took approximately **3.5 hours**.
+The example points the frontend at the default local client URL, `http://127.0.0.1:3210`. Update
+`NEXT_PUBLIC_CONVEX_URL` in `apps/web/.env.local` when connecting to a different deployment.
 
-After completing the assignment, I spent an additional **1 hour** on two follow-up passes:
-
-- `refactor(app): address self-review findings`
-- `style(code): standardize function syntax and control flow`
+This branch intentionally contains no hosting configuration. It uses Convex's local development
+deployment only; a production setup would explicitly connect the web build to a managed or
+self-hosted deployment.
 
 ## What is included
 
@@ -43,10 +48,13 @@ After completing the assignment, I spent an additional **1 hour** on two follow-
 - Shareable URL for the active log; other expanded records stay transient
 - Manual refresh plus loading, error, empty, and no-results states
 - System light/dark theme, visible focus, reduced-motion support, and responsive desktop-first layout
+- Anonymous app-open and log-click tracking persisted by a separate Convex backend
 
 ## Architecture
 
-The page is a Server Component and uses a plain `await fetch` with `cache: "no-store"`. There is one request, no mutations, and no shared client cache, so a query library would add machinery without solving a current problem. Zod validates the response before it crosses into the UI.
+The page is a Server Component and uses a plain `await fetch` with `cache: "no-store"`. There is one
+log request and no shared client cache, so a query library would add machinery without solving a
+current problem. Zod validates the response before it crosses into the UI.
 
 `normalizeLogs` is the boundary between OTLP and presentation. It walks resource → scope → records once, preserves the exact resource parent, resolves every `AnyValue` variant, builds the search text, and returns serializable view models. OTLP nanoseconds are parsed with `BigInt` before converting to milliseconds, avoiding precision loss above JavaScript's safe integer range.
 
@@ -55,6 +63,29 @@ The API does not provide log IDs. Each record receives a deterministic FNV-1a fi
 Because the assignment API generates a random payload, a shared log fingerprint may no longer exist after a refresh. With stable production data, the URL identifies the same record deterministically.
 
 UI controls use native HTML and small React components. Nuqs owns only state worth sharing: search, view, histogram mode, time mode, and the active log. Multiple open rows and resource groups remain local state, keeping URLs useful instead of encoding incidental UI state.
+
+## Event tracking
+
+The browser calls the typed `events.record` Convex mutation directly. Opening the app records an
+`app_opened` event. Every user click that expands or collapses a log records a `log_clicked` event
+with the action and deterministic log ID. URL-driven expansion and state restoration are not counted
+as clicks.
+
+Three random UUIDs serve different purposes:
+
+- `anonymousId` is stored in `localStorage` and distinguishes a browser across visits
+- `sessionId` is stored in `sessionStorage` and groups events from one browser-tab session
+- `eventId` identifies one event and makes writes idempotent
+
+These identifiers are anonymous and do not represent an authenticated person. Clearing browser
+storage creates a new anonymous identity, and the same person on another device cannot be correlated.
+The tracker never sends the log body or its attributes.
+
+Convex validators enforce the event shape at the mutation boundary. The mutation checks the
+`by_event_id` index and inserts within one transaction, so repeated delivery is safely deduplicated.
+The table and mutation share one event validator, while generated function types keep the React call
+aligned with that backend contract. Tracking failures are reported to the browser console but never
+block or roll back the log-viewer interaction.
 
 ## Time zones
 
@@ -97,4 +128,5 @@ The included search is intentionally client-side because the assignment endpoint
 
 ## Stack
 
-Next.js App Router, React, TypeScript, Tailwind CSS, CVA, ECharts, Zod, Nuqs, Vitest, Oxlint, and Oxfmt.
+Next.js App Router, React, TypeScript, Convex, Tailwind CSS, CVA, ECharts, Zod, Nuqs, Vitest,
+Oxlint, and Oxfmt.
