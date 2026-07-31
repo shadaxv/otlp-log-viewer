@@ -18,6 +18,7 @@ import { Histogram } from "@/components/histogram/histogram";
 import { buildHistogram } from "@/lib/otlp/histogram";
 import type { NormalizedLog, NormalizedLogs } from "@/lib/otlp/normalize";
 import { createTimeFormatter, formatTimestamp, timeZoneCookie } from "@/lib/time-zone";
+import { useEventTracking } from "@/lib/use-event-tracking";
 
 import { LogTable } from "./log-table";
 import { ResourceGroup } from "./resource-group";
@@ -40,6 +41,7 @@ export const LogViewer = ({
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [controls, setControls] = useQueryStates(queryParsers, { history: "replace" });
+  const recordEvent = useEventTracking();
   const [browserTimeZone, setBrowserTimeZone] = useState(initialTimeZone);
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(
     () => new Set(controls.log ? [controls.log] : []),
@@ -132,6 +134,11 @@ export const LogViewer = ({
 
   const toggleLog = useCallback(
     (log: NormalizedLog, opening: boolean) => {
+      recordEvent({
+        type: "log_clicked",
+        logId: log.id,
+        action: opening ? "expand" : "collapse",
+      });
       interactedLog.current = opening ? log.id : null;
 
       setExpandedLogs((current) => {
@@ -152,7 +159,7 @@ export const LogViewer = ({
         setControls({ log: null });
       }
     },
-    [setControls],
+    [recordEvent, setControls],
   );
 
   const toggleResource = (resourceId: string, open: boolean) => {

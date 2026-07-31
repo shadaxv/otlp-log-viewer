@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 
+import { AppOpenTracker } from "@/lib/use-event-tracking";
+
 export const metadata: Metadata = {
   title: "OTLP Log Viewer",
   description: "Inspect OpenTelemetry log records and their resource context.",
@@ -23,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <AppOpenTracker />
         <NuqsAdapter>{children}</NuqsAdapter>
       </body>
     </html>

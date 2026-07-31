@@ -1,5 +1,8 @@
 packages:
-  - apps/web
+  - apps/*
+
+onlyBuiltDependencies:
+  - esbuild
 
 ignoredBuiltDependencies:
   - sharp

@@ -13,23 +13,28 @@ The follow-up assignment is available in two backend variants:
 
 ## Run locally
 
-Requires Node.js 24 LTS and pnpm 10.
+Requires Node.js 24 LTS, pnpm 10, Docker and Docker Compose.
 
 ```bash
 pnpm install
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+pnpm postgres
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). The event API runs at
+[http://localhost:3001](http://localhost:3001).
 
-## Time spent
+`pnpm dev` starts the applications in `apps/web` and `apps/api`. PostgreSQL runs separately in
+Docker and can be stopped with:
 
-The original time-boxed implementation took approximately **3.5 hours**.
+```bash
+pnpm postgres:down
+```
 
-After completing the assignment, I spent an additional **1 hour** on two follow-up passes:
-
-- `refactor(app): address self-review findings`
-- `style(code): standardize function syntax and control flow`
+Both applications require their environment files. The committed examples contain the complete local
+configuration and are intended to be copied before starting the workspace.
 
 ## What is included
 
@@ -43,10 +48,13 @@ After completing the assignment, I spent an additional **1 hour** on two follow-
 - Shareable URL for the active log; other expanded records stay transient
 - Manual refresh plus loading, error, empty, and no-results states
 - System light/dark theme, visible focus, reduced-motion support, and responsive desktop-first layout
+- Anonymous app-open and log-click tracking persisted by a separate Express and PostgreSQL backend
 
 ## Architecture
 
-The page is a Server Component and uses a plain `await fetch` with `cache: "no-store"`. There is one request, no mutations, and no shared client cache, so a query library would add machinery without solving a current problem. Zod validates the response before it crosses into the UI.
+The page is a Server Component and uses a plain `await fetch` with `cache: "no-store"`. There is one
+log request and no shared client cache, so a query library would add machinery without solving a
+current problem. Zod validates the response before it crosses into the UI.
 
 `normalizeLogs` is the boundary between OTLP and presentation. It walks resource → scope → records once, preserves the exact resource parent, resolves every `AnyValue` variant, builds the search text, and returns serializable view models. OTLP nanoseconds are parsed with `BigInt` before converting to milliseconds, avoiding precision loss above JavaScript's safe integer range.
 
@@ -55,6 +63,28 @@ The API does not provide log IDs. Each record receives a deterministic FNV-1a fi
 Because the assignment API generates a random payload, a shared log fingerprint may no longer exist after a refresh. With stable production data, the URL identifies the same record deterministically.
 
 UI controls use native HTML and small React components. Nuqs owns only state worth sharing: search, view, histogram mode, time mode, and the active log. Multiple open rows and resource groups remain local state, keeping URLs useful instead of encoding incidental UI state.
+
+## Event tracking
+
+The browser sends usage events directly to the separate Express application. Opening the app records
+an `app_opened` event. Every user click that expands or collapses a log records a `log_clicked` event
+with the action and deterministic log ID. URL-driven expansion and state restoration are not counted
+as clicks.
+
+Three random UUIDs serve different purposes:
+
+- `anonymousId` is stored in `localStorage` and distinguishes a browser across visits
+- `sessionId` is stored in `sessionStorage` and groups events from one browser-tab session
+- `eventId` identifies one event and makes writes idempotent
+
+These identifiers are anonymous and do not represent an authenticated person. Clearing browser
+storage creates a new anonymous identity, and the same person on another device cannot be correlated.
+The tracker never sends the log body or its attributes.
+
+`POST /events` validates the discriminated event payload with Zod and inserts it through a
+parameterized `pg` query. PostgreSQL constraints preserve event-specific invariants, while
+`ON CONFLICT (event_id) DO NOTHING` safely deduplicates repeated delivery. Tracking failures are
+reported to the browser console but never block or roll back the log-viewer interaction.
 
 ## Time zones
 
@@ -83,7 +113,10 @@ pnpm test
 pnpm build
 ```
 
-Tests focus on the risky boundaries: recursive OTLP `AnyValue` parsing, nested normalization, nanosecond precision, duplicate fingerprints, search indexing, severity aggregation, equal histogram buckets, identical timestamps, and time-zone validation.
+Tests focus on the risky boundaries: recursive OTLP `AnyValue` parsing, nested normalization,
+nanosecond precision, duplicate fingerprints, search indexing, severity aggregation, equal histogram
+buckets, identical timestamps, time-zone validation, event validation, persistence parameters, and
+idempotent event delivery.
 
 ## Production evolution
 
@@ -97,4 +130,5 @@ The included search is intentionally client-side because the assignment endpoint
 
 ## Stack
 
-Next.js App Router, React, TypeScript, Tailwind CSS, CVA, ECharts, Zod, Nuqs, Vitest, Oxlint, and Oxfmt.
+Next.js App Router, React, TypeScript, Express, PostgreSQL, `pg`, Tailwind CSS, CVA, ECharts, Zod,
+Nuqs, Vitest, Supertest, Oxlint, and Oxfmt.
